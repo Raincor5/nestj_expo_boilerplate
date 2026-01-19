@@ -1,0 +1,8 @@
+- Frontend: React Native (Expo)
+- Backend: NestJS (Node.js + TypeScript)
+- Database: NeonDB (PostgreSQL)
+- Storage: Cloudflare R2
+- Auth & SMTP: NestJS + Postmark/Mailgun
+- Real-time: WebSockets, Ably, or Socket.io
+- AI (later for future): Vapi.AI, TensorFlow (future), LLM APIs
+- DevOps: Render, GitHub, Docker, CI/CD
