@@ -1,6 +1,14 @@
 # Database Setup with Row-Level Security
 
-## PostgreSQL Setup
+## PostgreSQL Setup (Neon or Local)
+
+### Neon (recommended)
+
+1. Create a Neon project and note the provided `DATABASE_URL` (includes `sslmode=require`).
+2. Set `DB_SSL=true` (default) so TypeORM connects with SSL.
+3. Use the same connection string for migrations or psql, e.g.: `psql "$DATABASE_URL" -f src/database/migrations/001-setup-rls.sql`.
+
+### Local
 
 1. Install PostgreSQL locally (if not already installed)
 2. Create a database:

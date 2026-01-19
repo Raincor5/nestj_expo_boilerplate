@@ -4,7 +4,7 @@
 
 1. Install dependencies: `npm install`
 2. Create `.env` file (see `.env.example`)
-3. Create PostgreSQL database: `CREATE DATABASE auth_db;`
+3. If using Neon (recommended): create a Neon project and copy the provided `DATABASE_URL` (include `sslmode=require`). For local PostgreSQL, create the database manually: `CREATE DATABASE auth_db;`
 4. Run: `npm run start:dev`
 
 **Note**: The `dist` folder (compiled JavaScript) is in `.gitignore` and will be created automatically when you run `npm run build` or `npm run start:dev`. This is expected - you don't commit compiled code to git.
@@ -34,11 +34,13 @@ src/
 
 Required environment variables (see `.env.example`):
 
-- `DB_HOST` - PostgreSQL host
-- `DB_PORT` - PostgreSQL port
-- `DB_USERNAME` - Database username
-- `DB_PASSWORD` - Database password
-- `DB_NAME` - Database name
+- `DATABASE_URL` - Full connection string (preferred for Neon)
+- `DB_SSL` - Enable SSL; keep `true` for Neon (default: true)
+- `DB_HOST` - PostgreSQL host (fallback when `DATABASE_URL` is not set)
+- `DB_PORT` - PostgreSQL port (fallback)
+- `DB_USERNAME` - Database username (fallback)
+- `DB_PASSWORD` - Database password (fallback)
+- `DB_NAME` - Database name (fallback)
 - `JWT_SECRET` - Secret for access tokens
 - `JWT_REFRESH_SECRET` - Secret for refresh tokens
 - `JWT_EXPIRES_IN` - Access token expiration (default: 15m)
@@ -47,6 +49,12 @@ Required environment variables (see `.env.example`):
 - `NODE_ENV` - Environment (development/production)
 
 ## Database Setup
+
+### Neon (serverless Postgres)
+
+- Grab the `DATABASE_URL` from Neon (it should include `sslmode=require`).
+- Set `DB_SSL=true` (default) so TypeORM connects with SSL to Neon.
+- Migrations and RLS scripts can be run with the same connection string via `psql` or `npm run migration:run`.
 
 ### Development
 

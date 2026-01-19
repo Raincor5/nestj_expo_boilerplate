@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -13,17 +13,38 @@ import { UserModule } from './user/user.module';
       envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({
-      useFactory: () => ({
-        type: 'postgres',
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT, 10) || 5432,
-        username: process.env.DB_USERNAME || 'postgres',
-        password: process.env.DB_PASSWORD || 'postgres',
-        database: process.env.DB_NAME || 'auth_db',
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: process.env.NODE_ENV !== 'production',
-        logging: process.env.NODE_ENV === 'development',
-      }),
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const nodeEnv = configService.get<string>('NODE_ENV');
+        const isProd = nodeEnv === 'production';
+        const isDev = nodeEnv === 'development';
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        const shouldUseSsl = (
+          configService.get<string>('DB_SSL', 'true') || 'true'
+        )
+          .toLowerCase()
+          .trim() === 'true';
+
+        const connectionConfig = databaseUrl
+          ? { url: databaseUrl }
+          : {
+              host: configService.get<string>('DB_HOST') || 'localhost',
+              port:
+                parseInt(configService.get<string>('DB_PORT') || '', 10) || 5432,
+              username: configService.get<string>('DB_USERNAME') || 'postgres',
+              password: configService.get<string>('DB_PASSWORD') || 'postgres',
+              database: configService.get<string>('DB_NAME') || 'auth_db',
+            };
+
+        return {
+          type: 'postgres',
+          ...connectionConfig,
+          ssl: shouldUseSsl ? { rejectUnauthorized: false } : undefined,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: !isProd,
+          logging: isDev,
+        };
+      },
     }),
     AuthModule,
     UserModule,
