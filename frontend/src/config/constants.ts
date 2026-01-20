@@ -15,7 +15,7 @@
 // Automatically detect the API URL based on environment
 export const API_BASE_URL = __DEV__
   ? process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'
-  : 'https://your-production-api.com';
+  : 'https://nestj-expo-boilerplate.onrender.com';
 
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
