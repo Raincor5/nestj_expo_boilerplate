@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ABTest } from './entities/ab-test.entity';
@@ -8,7 +13,9 @@ import { ABTestMetric } from './entities/ab-test-metric.entity';
 import { CreateMetricDto } from './dto/create-metric.dto';
 
 @Injectable()
-export class ABTestService {
+export class ABTestService implements OnModuleInit {
+  private readonly DEFAULT_TEST_NAME = 'home_ui_test';
+
   constructor(
     @InjectRepository(ABTest)
     private testRepository: Repository<ABTest>,
@@ -20,6 +27,56 @@ export class ABTestService {
     private metricRepository: Repository<ABTestMetric>,
   ) {}
 
+  async onModuleInit(): Promise<void> {
+    await this.ensureDefaultTest();
+  }
+
+  private async ensureDefaultTest(): Promise<void> {
+    // Ensure the default test exists and is active
+    let test = await this.testRepository.findOne({
+      where: { name: this.DEFAULT_TEST_NAME },
+    });
+
+    if (!test) {
+      test = this.testRepository.create({
+        name: this.DEFAULT_TEST_NAME,
+        description: 'Testing home screen UI variants',
+        active: true,
+      });
+      test = await this.testRepository.save(test);
+    }
+
+    if (!test.active) {
+      test.active = true;
+      await this.testRepository.save(test);
+    }
+
+    // Ensure default groups exist
+    const groups = await this.groupRepository.find({ where: { testId: test.id } });
+    const hasVariantA = groups.some((g) => g.groupName === 'variant_a');
+    const hasVariantB = groups.some((g) => g.groupName === 'variant_b');
+
+    if (!hasVariantA) {
+      await this.groupRepository.save(
+        this.groupRepository.create({
+          testId: test.id,
+          groupName: 'variant_a',
+          description: 'Control variant - original UI',
+        }),
+      );
+    }
+
+    if (!hasVariantB) {
+      await this.groupRepository.save(
+        this.groupRepository.create({
+          testId: test.id,
+          groupName: 'variant_b',
+          description: 'Treatment variant - new UI',
+        }),
+      );
+    }
+  }
+
   /**
    * Assign a user to a test group
    * If already assigned, return existing assignment
@@ -28,6 +85,11 @@ export class ABTestService {
     userId: string,
     testName: string,
   ): Promise<ABTestAssignment> {
+    // Make sure default test/groups exist when using the default test name
+    if (testName === this.DEFAULT_TEST_NAME) {
+      await this.ensureDefaultTest();
+    }
+
     const test = await this.testRepository.findOne({
       where: { name: testName, active: true },
       relations: ['groups'],

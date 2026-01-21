@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { STORAGE_KEYS } from '../config/constants';
 
 interface TestGroup {
@@ -9,29 +10,61 @@ interface TestGroup {
   assignedAt: string;
 }
 
+/**
+ * Secure storage helper that falls back to localStorage on web,
+ * since expo-secure-store native APIs are unavailable in web builds.
+ */
+const storageAdapter = {
+  async setItem(key: string, value: string) {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(key, value);
+      return;
+    }
+    await SecureStore.setItemAsync(key, value);
+  },
+
+  async getItem(key: string) {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(key);
+    }
+    return await SecureStore.getItemAsync(key);
+  },
+
+  async deleteItem(key: string) {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(key);
+      return;
+    }
+    await SecureStore.deleteItemAsync(key);
+  },
+};
+
 export const storage = {
   async setAccessToken(token: string): Promise<void> {
-    await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, token);
+    await storageAdapter.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
   },
 
   async getAccessToken(): Promise<string | null> {
-    return await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+    return await storageAdapter.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   },
 
   async setRefreshToken(token: string): Promise<void> {
-    await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, token);
+    await storageAdapter.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
   },
 
   async getRefreshToken(): Promise<string | null> {
-    return await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+    return await storageAdapter.getItem(STORAGE_KEYS.REFRESH_TOKEN);
   },
 
   async setTestGroup(testGroup: TestGroup): Promise<void> {
-    await SecureStore.setItemAsync(STORAGE_KEYS.TEST_GROUP, JSON.stringify(testGroup));
+    await storageAdapter.setItem(
+      STORAGE_KEYS.TEST_GROUP,
+      JSON.stringify(testGroup),
+    );
   },
 
   async getTestGroup(): Promise<TestGroup | null> {
-    const data = await SecureStore.getItemAsync(STORAGE_KEYS.TEST_GROUP);
+    const data = await storageAdapter.getItem(STORAGE_KEYS.TEST_GROUP);
     if (data) {
       try {
         return JSON.parse(data);
@@ -44,8 +77,8 @@ export const storage = {
   },
 
   async clearTokens(): Promise<void> {
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.TEST_GROUP);
+    await storageAdapter.deleteItem(STORAGE_KEYS.ACCESS_TOKEN);
+    await storageAdapter.deleteItem(STORAGE_KEYS.REFRESH_TOKEN);
+    await storageAdapter.deleteItem(STORAGE_KEYS.TEST_GROUP);
   },
 };
