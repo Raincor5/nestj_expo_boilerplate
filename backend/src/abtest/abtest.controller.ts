@@ -13,7 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 interface RequestWithUser extends Request {
   user: {
-    sub: string;
+    id: string;
     email: string;
   };
 }
@@ -33,7 +33,7 @@ export class ABTestController {
     @Request() req: RequestWithUser,
   ) {
     const assignment = await this.abtestService.assignUserToTest(
-      req.user.sub,
+      req.user.id,
       testName,
     );
 
@@ -55,7 +55,7 @@ export class ABTestController {
     @Request() req: RequestWithUser,
   ) {
     const assignment = await this.abtestService.getUserTestAssignment(
-      req.user.sub,
+      req.user.id,
       testName,
     );
 
@@ -78,7 +78,7 @@ export class ABTestController {
     @Request() req: RequestWithUser,
   ) {
     const metric = await this.abtestService.recordMetric(
-      req.user.sub,
+      req.user.id,
       testName,
       createMetricDto,
     );
@@ -100,7 +100,7 @@ export class ABTestController {
     @Request() req: RequestWithUser,
   ) {
     const metrics = await this.abtestService.getUserMetrics(
-      req.user.sub,
+      req.user.id,
       testName,
     );
 
