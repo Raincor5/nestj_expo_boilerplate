@@ -1,15 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
-  StyleSheet,
   Alert,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useABTestMetrics } from '../hooks/useABTestMetrics';
+import { VariantA } from './HomeScreen_VariantA';
+import { VariantB } from './HomeScreen_VariantB';
 
 export default function HomeScreen() {
-  const { user, logout } = useAuth();
+  const { user, testGroup, logout } = useAuth();
+  const { trackEvent, flushMetrics } = useABTestMetrics('home_ui_test');
+
+  // Track screen view on mount
+  useEffect(() => {
+    trackEvent('screen_viewed');
+  }, []);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -22,6 +29,8 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Track logout event before logging out
+              await flushMetrics();
               await logout();
             } catch (error) {
               Alert.alert('Error', 'Failed to logout');
@@ -32,79 +41,37 @@ export default function HomeScreen() {
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome!</Text>
-        <Text style={styles.subtitle}>You are successfully authenticated</Text>
-        <View style={styles.userInfo}>
-          <Text style={styles.label}>Email:</Text>
-          <Text style={styles.value}>{user?.email}</Text>
-        </View>
-        <View style={styles.userInfo}>
-          <Text style={styles.label}>User ID:</Text>
-          <Text style={styles.value}>{user?.id}</Text>
-        </View>
-      </View>
+  const handleTrackEvent = (event: string) => {
+    trackEvent(event);
+  };
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
-    </View>
+  if (!user || !testGroup) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Render based on test group variant
+  if (testGroup.groupName === 'variant_b') {
+    return (
+      <VariantB
+        email={user.email}
+        userId={user.id}
+        onLogout={handleLogout}
+        onTrackEvent={handleTrackEvent}
+      />
+    );
+  }
+
+  // Default to variant A
+  return (
+    <VariantA
+      email={user.email}
+      userId={user.id}
+      onLogout={handleLogout}
+      onTrackEvent={handleTrackEvent}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 20,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 40,
-    textAlign: 'center',
-  },
-  userInfo: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  value: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

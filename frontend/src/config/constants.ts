@@ -20,4 +20,5 @@ export const API_BASE_URL = __DEV__
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
   REFRESH_TOKEN: 'refresh_token',
+  TEST_GROUP: 'test_group',
 };

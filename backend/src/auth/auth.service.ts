@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
+import { ABTestService } from '../abtest/abtest.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
@@ -17,6 +18,7 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private abtestService: ABTestService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -33,11 +35,24 @@ export class AuthService {
     const tokens = await this.generateTokenPair(user.id, user.email);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
+    // Assign user to the default A/B test
+    const testAssignment = await this.abtestService.assignUserToTest(
+      user.id,
+      'home_ui_test',
+    );
+
     return {
       ...tokens,
       user: {
         id: user.id,
         email: user.email,
+      },
+      testGroup: {
+        testId: testAssignment.testId,
+        testName: 'home_ui_test',
+        groupId: testAssignment.groupId,
+        groupName: testAssignment.group.groupName,
+        assignedAt: testAssignment.assignedAt,
       },
     };
   }
@@ -63,11 +78,24 @@ export class AuthService {
     const tokens = await this.generateTokenPair(user.id, user.email);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
+    // Assign user to the default A/B test (or get existing assignment)
+    const testAssignment = await this.abtestService.assignUserToTest(
+      user.id,
+      'home_ui_test',
+    );
+
     return {
       ...tokens,
       user: {
         id: user.id,
         email: user.email,
+      },
+      testGroup: {
+        testId: testAssignment.testId,
+        testName: 'home_ui_test',
+        groupId: testAssignment.groupId,
+        groupName: testAssignment.group.groupName,
+        assignedAt: testAssignment.assignedAt,
       },
     };
   }
