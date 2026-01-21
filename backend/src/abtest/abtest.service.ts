@@ -172,7 +172,18 @@ export class ABTestService implements OnModuleInit {
     testName: string,
     createMetricDto: CreateMetricDto,
   ): Promise<ABTestMetric> {
-    const assignment = await this.getUserTestAssignment(userId, testName);
+    // Ensure default test exists if using the default name
+    if (testName === this.DEFAULT_TEST_NAME) {
+      await this.ensureDefaultTest();
+    }
+
+    // Make sure the user has an assignment; if not, assign them now
+    let assignment: ABTestAssignment;
+    try {
+      assignment = await this.getUserTestAssignment(userId, testName);
+    } catch (error) {
+      assignment = await this.assignUserToTest(userId, testName);
+    }
 
     const metric = this.metricRepository.create({
       userId,
